@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="msvalidate.01" content="6a0edd665620488f8b7401f2478da371">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="BUG解决之路-1    Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标（JetBrains Runtime版本：11.0.7）解决方案手动编译JetBrainsRuntime + OpenJFX，修复该bug，以及正常预览Markdown文件(依赖JavaFX) 环境配置系统：Ubuntu 18.04 LTS 内存：4GB物理内存 + 4GB虚拟内存(swap) J">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BUG解决之路-1 Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标">
+<meta property="og:url" content="http://example.com/2020/10/21/Linux%E4%B8%8Bfcitx%E8%BE%93%E5%85%A5%E6%B3%95%E5%80%99%E9%80%89%E6%A1%86%E5%9C%A8JetBrains%E7%B3%BB%E5%88%97IDE%E4%B8%AD%E4%B8%8D%E8%B7%9F%E9%9A%8F%E5%85%89%E6%A0%87/index.html">
+<meta property="og:site_name" content="Welcome To ZT&#39;s Blog">
+<meta property="og:description" content="BUG解决之路-1    Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标（JetBrains Runtime版本：11.0.7）解决方案手动编译JetBrainsRuntime + OpenJFX，修复该bug，以及正常预览Markdown文件(依赖JavaFX) 环境配置系统：Ubuntu 18.04 LTS 内存：4GB物理内存 + 4GB虚拟内存(swap) J">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/Linux%E4%B8%8Bfcitx%E8%BE%93%E5%85%A5%E6%B3%95%E5%80%99%E9%80%89%E6%A1%86%E5%9C%A8JetBrains%E7%B3%BB%E5%88%97IDE%E4%B8%AD%E4%B8%8D%E8%B7%9F%E9%9A%8F%E5%85%89%E6%A0%87/1.png">
+<meta property="article:published_time" content="2020-10-21T05:30:25.000Z">
+<meta property="article:modified_time" content="2020-10-21T07:03:34.452Z">
+<meta property="article:author" content="Tom Zeng">
+<meta property="article:tag" content="BUG">
+<meta property="article:tag" content="JetBrains">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/Linux%E4%B8%8Bfcitx%E8%BE%93%E5%85%A5%E6%B3%95%E5%80%99%E9%80%89%E6%A1%86%E5%9C%A8JetBrains%E7%B3%BB%E5%88%97IDE%E4%B8%AD%E4%B8%8D%E8%B7%9F%E9%9A%8F%E5%85%89%E6%A0%87/1.png">
+
+<link rel="canonical" href="http://example.com/2020/10/21/Linux%E4%B8%8Bfcitx%E8%BE%93%E5%85%A5%E6%B3%95%E5%80%99%E9%80%89%E6%A1%86%E5%9C%A8JetBrains%E7%B3%BB%E5%88%97IDE%E4%B8%AD%E4%B8%8D%E8%B7%9F%E9%9A%8F%E5%85%89%E6%A0%87/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>BUG解决之路-1 Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标 | Welcome To ZT's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Welcome To ZT's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Dream It Possible</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/10/21/Linux%E4%B8%8Bfcitx%E8%BE%93%E5%85%A5%E6%B3%95%E5%80%99%E9%80%89%E6%A1%86%E5%9C%A8JetBrains%E7%B3%BB%E5%88%97IDE%E4%B8%AD%E4%B8%8D%E8%B7%9F%E9%9A%8F%E5%85%89%E6%A0%87/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Tom Zeng">
+      <meta itemprop="description" content="Personal Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Welcome To ZT's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          BUG解决之路-1 Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-10-21 13:30:25 / 修改时间：15:03:34" itemprop="dateCreated datePublished" datetime="2020-10-21T13:30:25+08:00">2020-10-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/BUG%E4%BF%AE%E5%A4%8D%E4%B9%8B%E8%B7%AF/" itemprop="url" rel="index"><span itemprop="name">BUG修复之路</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="BUG解决之路-1-Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标（JetBrains-Runtime版本：11-0-7）"><a href="#BUG解决之路-1-Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标（JetBrains-Runtime版本：11-0-7）" class="headerlink" title="BUG解决之路-1    Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标（JetBrains Runtime版本：11.0.7）"></a>BUG解决之路-1    Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标（JetBrains Runtime版本：11.0.7）</h1><h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>手动编译JetBrainsRuntime + OpenJFX，修复该bug，以及正常预览Markdown文件(依赖JavaFX)</p>
+<h2 id="环境配置"><a href="#环境配置" class="headerlink" title="环境配置"></a>环境配置</h2><p>系统：Ubuntu 18.04 LTS</p>
+<p>内存：4GB物理内存 + 4GB虚拟内存(swap)</p>
+<p>Java版本：OpenJDK 11.0.8</p>
+<p>gcc版本：gcc 7.5.0</p>
+<a id="more"></a>
+
+<h2 id="解决步骤"><a href="#解决步骤" class="headerlink" title="解决步骤"></a>解决步骤</h2><h3 id="编译OpenJFX"><a href="#编译OpenJFX" class="headerlink" title="编译OpenJFX"></a>编译OpenJFX</h3><h4 id="1-安装依赖"><a href="#1-安装依赖" class="headerlink" title="1. 安装依赖"></a>1. 安装依赖</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install ksh bison flex gperf build-essential libasound2-dev libgl1-mesa-dev \</span><br><span class="line">    libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libjpeg-dev \</span><br><span class="line">    libpng-dev libx11-dev libxml2-dev libxslt1-dev libxt-dev \</span><br><span class="line">    libxxf86vm-dev pkg-config x11proto-core-dev \</span><br><span class="line">    x11proto-xf86vidmode-dev libavcodec-dev mercurial \</span><br><span class="line">    libgtk2.0-dev libgtk-3-dev \</span><br><span class="line">    libxtst-dev libudev-dev libavformat-dev ant</span><br><span class="line"></span><br><span class="line">sudo apt install cmake ruby</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-安装OpenJDK11，配置环境变量-编译需要"><a href="#2-安装OpenJDK11，配置环境变量-编译需要" class="headerlink" title="2. 安装OpenJDK11，配置环境变量(编译需要)"></a>2. 安装OpenJDK11，配置环境变量(编译需要)</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install openjdk-11-jdk</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64</span><br><span class="line"><span class="built_in">export</span> JDK_HOME=<span class="variable">$JAVA_HOME</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="3-获取OpenJFX源码"><a href="#3-获取OpenJFX源码" class="headerlink" title="3. 获取OpenJFX源码"></a>3. 获取OpenJFX源码</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install mercurial</span><br><span class="line">hg <span class="built_in">clone</span> http://hg.openjdk.java.net/openjfx/11-dev/rt</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-编译"><a href="#4-编译" class="headerlink" title="4. 编译"></a>4. 编译</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> rt</span><br><span class="line">chmod a+x gradlew</span><br><span class="line">./gradlew -PCOMPILE_WEBKIT=<span class="literal">true</span> <span class="comment">#注意一定要编译Webkit，不然Markdown一样无法预览</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="5-已知问题解决方案"><a href="#5-已知问题解决方案" class="headerlink" title="5. 已知问题解决方案"></a>5. 已知问题解决方案</h4><h5 id="1）virtual-memory-exhausted-Cannot-allocate-memory"><a href="#1）virtual-memory-exhausted-Cannot-allocate-memory" class="headerlink" title="1）virtual memory exhausted: Cannot allocate memory"></a>1）virtual memory exhausted: Cannot allocate memory</h5><p>内存不够，分配虚拟内存后重新编译</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mkdir /usr/img</span><br><span class="line">dd <span class="keyword">if</span>=/dev/zero of=/usr/img/swap bs=1024 count=4096000</span><br><span class="line">mkswap /usr/img/swap</span><br><span class="line">swapon /usr/img/swap</span><br><span class="line"></span><br><span class="line">./gradlew -PCOMPILE_WEBKIT=<span class="literal">true</span> <span class="comment">#重新编译</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="编译JetBrainsRuntime"><a href="#编译JetBrainsRuntime" class="headerlink" title="编译JetBrainsRuntime"></a>编译JetBrainsRuntime</h3><h4 id="1-获取JetBrainsRuntime源码"><a href="#1-获取JetBrainsRuntime源码" class="headerlink" title="1. 获取JetBrainsRuntime源码"></a>1. 获取JetBrainsRuntime源码</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/JetBrains/JetBrainsRuntime.git</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-下载并应用patch"><a href="#2-下载并应用patch" class="headerlink" title="2. 下载并应用patch"></a>2. 下载并应用patch</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> JetBrainsRuntime</span><br><span class="line">git checkout cfc3e87f2ac27a0b8c78c729c113aa52535feff6</span><br><span class="line">wget https://raw.githubusercontent.com/prehonor/myJetBrainsRuntime/master/idea.patch</span><br><span class="line">git apply idea.patch</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="3-安装依赖"><a href="#3-安装依赖" class="headerlink" title="3. 安装依赖"></a>3. 安装依赖</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install autoconf make build-essential libx11-dev \ </span><br><span class="line">	libxext-dev libxrender-dev libxtst-dev libxt-dev \</span><br><span class="line">	libxrandr-dev libcups2-dev libfontconfig1-dev \</span><br><span class="line">	libasound2-dev </span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-编译并整合OpenJFX"><a href="#4-编译并整合OpenJFX" class="headerlink" title="4. 编译并整合OpenJFX"></a>4. 编译并整合OpenJFX</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sh ./configure --disable-warnings-as-errors  --with-import-modules=_path_to_jfx-dev_/rt/build/modular-sdk <span class="comment">#_path_to_jfx-dev_是第一步获取的OpenJFX源码即rt文件夹的绝对路径, 下面path_to_JetBrainsRuntime同理</span></span><br><span class="line">make images</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="安装JetBrainsRuntime"><a href="#安装JetBrainsRuntime" class="headerlink" title="安装JetBrainsRuntime"></a>安装JetBrainsRuntime</h3><h4 id="重命名jdk为jbr"><a href="#重命名jdk为jbr" class="headerlink" title="重命名jdk为jbr"></a>重命名jdk为jbr</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> path_to_JetBrainsRuntime/JetBrainsRuntime/build/linux-x86_64-normal-server-release/images</span><br><span class="line">mv jdk jbr</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="IDE安装Choose-Runtime插件"><a href="#IDE安装Choose-Runtime插件" class="headerlink" title="IDE安装Choose Runtime插件"></a>IDE安装Choose Runtime插件</h4><h4 id="安装编译得到的JBR"><a href="#安装编译得到的JBR" class="headerlink" title="安装编译得到的JBR"></a>安装编译得到的JBR</h4><p>IDE里按 CTRL+SHIFT+A，输入choose runtime，选择jbr的路径，点击install，IDE自动重启，安装完毕</p>
+<h2 id="解决效果"><a href="#解决效果" class="headerlink" title="解决效果"></a>解决效果</h2><p>已在Intellij IDEA 2020.1，WebStorm 2020.2以及PyCharm 2020.2上自测通过，效果图如下</p>
+<p><img src="/images/Linux%E4%B8%8Bfcitx%E8%BE%93%E5%85%A5%E6%B3%95%E5%80%99%E9%80%89%E6%A1%86%E5%9C%A8JetBrains%E7%B3%BB%E5%88%97IDE%E4%B8%AD%E4%B8%8D%E8%B7%9F%E9%9A%8F%E5%85%89%E6%A0%87/1.png"></p>
+<p>附上本人编译完成的JetBrainsRuntime: </p>
+<p><a target="_blank" rel="noopener" href="https://download.csdn.net/download/qq_41859728/12984384">下载地址</a></p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/roland_sun/article/details/103380890">https://blog.csdn.net/roland_sun/article/details/103380890</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/u011166277/article/details/106287587?utm_source=app">https://blog.csdn.net/u011166277/article/details/106287587?utm_source=app</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/chenpingzhao/p/4820814.html">https://www.cnblogs.com/chenpingzhao/p/4820814.html</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/JetBrains/JetBrainsRuntime">https://github.com/JetBrains/JetBrainsRuntime</a></p>
+<p><a target="_blank" rel="noopener" href="https://wiki.openjdk.java.net/display/OpenJFX/Building+OpenJFX">https://wiki.openjdk.java.net/display/OpenJFX/Building+OpenJFX</a></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>Donate comment here.</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/wechatpay.png" alt="Tom Zeng 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/alipay.jpg" alt="Tom Zeng 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/BUG/" rel="tag"><i class="fa fa-tag"></i> BUG</a>
+              <a href="/tags/JetBrains/" rel="tag"><i class="fa fa-tag"></i> JetBrains</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/10/21/hello-world/" rel="prev" title="Hello World">
+      <i class="fa fa-chevron-left"></i> Hello World
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#BUG%E8%A7%A3%E5%86%B3%E4%B9%8B%E8%B7%AF-1-Linux%E4%B8%8Bfcitx%E8%BE%93%E5%85%A5%E6%B3%95%E5%80%99%E9%80%89%E6%A1%86%E5%9C%A8JetBrains%E7%B3%BB%E5%88%97IDE%E4%B8%AD%E4%B8%8D%E8%B7%9F%E9%9A%8F%E5%85%89%E6%A0%87%EF%BC%88JetBrains-Runtime%E7%89%88%E6%9C%AC%EF%BC%9A11-0-7%EF%BC%89"><span class="nav-text">BUG解决之路-1    Linux下fcitx输入法候选框在JetBrains系列IDE中不跟随光标（JetBrains Runtime版本：11.0.7）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-text">解决方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-text">环境配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%AD%A5%E9%AA%A4"><span class="nav-text">解决步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91OpenJFX"><span class="nav-text">编译OpenJFX</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96"><span class="nav-text">1. 安装依赖</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%AE%89%E8%A3%85OpenJDK11%EF%BC%8C%E9%85%8D%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F-%E7%BC%96%E8%AF%91%E9%9C%80%E8%A6%81"><span class="nav-text">2. 安装OpenJDK11，配置环境变量(编译需要)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E8%8E%B7%E5%8F%96OpenJFX%E6%BA%90%E7%A0%81"><span class="nav-text">3. 获取OpenJFX源码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-%E7%BC%96%E8%AF%91"><span class="nav-text">4. 编译</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-%E5%B7%B2%E7%9F%A5%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-text">5. 已知问题解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1%EF%BC%89virtual-memory-exhausted-Cannot-allocate-memory"><span class="nav-text">1）virtual memory exhausted: Cannot allocate memory</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91JetBrainsRuntime"><span class="nav-text">编译JetBrainsRuntime</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E8%8E%B7%E5%8F%96JetBrainsRuntime%E6%BA%90%E7%A0%81"><span class="nav-text">1. 获取JetBrainsRuntime源码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E4%B8%8B%E8%BD%BD%E5%B9%B6%E5%BA%94%E7%94%A8patch"><span class="nav-text">2. 下载并应用patch</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96"><span class="nav-text">3. 安装依赖</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-%E7%BC%96%E8%AF%91%E5%B9%B6%E6%95%B4%E5%90%88OpenJFX"><span class="nav-text">4. 编译并整合OpenJFX</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85JetBrainsRuntime"><span class="nav-text">安装JetBrainsRuntime</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%87%8D%E5%91%BD%E5%90%8Djdk%E4%B8%BAjbr"><span class="nav-text">重命名jdk为jbr</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IDE%E5%AE%89%E8%A3%85Choose-Runtime%E6%8F%92%E4%BB%B6"><span class="nav-text">IDE安装Choose Runtime插件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%BC%96%E8%AF%91%E5%BE%97%E5%88%B0%E7%9A%84JBR"><span class="nav-text">安装编译得到的JBR</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%95%88%E6%9E%9C"><span class="nav-text">解决效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="nav-text">参考链接</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Tom Zeng"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Tom Zeng</p>
+  <div class="site-description" itemprop="description">Personal Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/ztibeike" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;ztibeike" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:Tomzeng9@gmail.com" title="E-Mail → mailto:Tomzeng9@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Tom Zeng</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="//cdn.jsdelivr.net/gh/theme-next/theme-next-canvas-ribbon@1/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="//cdn.jsdelivr.net/gh/theme-next/theme-next-three@1/three.min.js"></script>
+    <script defer src="//cdn.jsdelivr.net/gh/theme-next/theme-next-three@1/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : ,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
